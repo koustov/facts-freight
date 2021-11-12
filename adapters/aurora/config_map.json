@@ -22,5 +22,6 @@
 		}
 	],
 	"YES": true,
-	"NO": false
+	"NO": false,
+	"None": ""
 }

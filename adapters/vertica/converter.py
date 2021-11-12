@@ -1,5 +1,5 @@
-def convert(val, type):
+def convert_data(val, type):
     if type == "varchar":
         return f"'{val}'"
     if type == "number":
-        return f"'{val}'"
+        return int(val)

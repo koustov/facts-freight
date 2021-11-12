@@ -2,6 +2,9 @@
 	"source": "aurora",
 	"target": "vertica",
 	"bucket_size": 10,
+	"log": {
+		"max_file_count": 5
+	},
 	"source_server": {
 		"server": "aurora-postgresql-us-east-1.cluster-cqcdehswzz9l.us-east-1.rds.amazonaws.com",
 		"port": 5432,

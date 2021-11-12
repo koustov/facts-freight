@@ -3,17 +3,21 @@ import boto3
 import os
 import psycopg2
 import json
+from log import Log
+import math
 
 
 class AuroraConnection:
-    def __init__(self, host, port, user, password, dbname, schema):
+    def __init__(self, host, port, user, password, dbname, schema, config):
         self.connection = psycopg2.connect(
             f"dbname={dbname} user={user} host={host} password={password} port={port}"
         )
         self.cur = self.connection.cursor()
         self.schema = schema
+        self.global_config = config
         with open(f"{os.path.dirname(__file__)}/config_map.json") as json_data:
             self.config_map = json.load(json_data)
+        Log.info("Aurora configuration initialized")
 
     def __get_mapped_data(self, val):
         # TODO: Not a suitable way. use has_key instead
@@ -55,23 +59,34 @@ class AuroraConnection:
         query_results = self.cur.fetchall()
         return query_results
 
-    def select(self, table, columns):
-        query = f"""SELECT {columns} FROM  {self.schema}.{table}"""
-        print(f"Select query {query}")
+    def select(self, table_config):
+        table_name = table_config["name"]
+        Log.info(f"Reading {self.schema}.{table_name} meta information...", table_name)
+        query = f"""SELECT count(*)  FROM  {self.schema}.{table_name}"""
         self.cur.execute(query)
         query_results = self.cur.fetchall()
-        return query_results
-
-    def select(self, table, columns, config):
-        print(f"Reading {self.schema}.{table} meta information...")
-        query = f"""SELECT count(*)  FROM  {self.schema}.{table}"""
-        self.cur.execute(query)
-        query_results = self.cur.fetchall()
-        total_rows = query_results[0]
-        print(f"Total rows {total_rows}...")
-
-        query = f"""SELECT {columns} FROM  {self.schema}.{table}"""
-        print(f"Select query {query}")
-        self.cur.execute(query)
-        query_results = self.cur.fetchall()
-        return query_results
+        total_rows = query_results[0][0]
+        Log.info(f"Total rows {total_rows}", table_name)
+        step_count = math.ceil(total_rows / self.global_config["bucket_size"])
+        columns = ""
+        if len(table_config["s_columns"]) > 0:
+            col_collection = []
+            for col in table_config["s_columns"]:
+                print(col["name"])
+                col_collection.append(col["name"])
+            columns = ", ".join(col_collection)
+        else:
+            columns = "*"
+        for step in range(step_count):
+            Log.info(
+                f"Batch size: {self.global_config['bucket_size']}, Processing {step + 1} of {step_count} batch",
+                table_name,
+            )
+            query = f"""SELECT {columns} FROM  {self.schema}.{table_name} LIMIT {self.global_config['bucket_size']} OFFSET {self.global_config['bucket_size'] * step}"""
+            Log.debug(f"Select query: {query}", table_name)
+            self.cur.execute(query)
+            query_results = self.cur.fetchall()
+            Log.debug(
+                f"Query result: {json.dumps(query_results, indent=4, sort_keys=True) }"
+            )
+            yield query_results

@@ -3,10 +3,11 @@ import os
 import vertica_python
 import json
 from log import Log
+from .converter import convert_data
 
 
 class VerticaConnection:
-    def __init__(self, host, port, user, password, dbname, schema):
+    def __init__(self, host, port, user, password, dbname, schema, config):
         conn_info = {
             "host": host,
             "port": port,
@@ -32,6 +33,7 @@ class VerticaConnection:
         self.schema = schema
         self.bucket_size = 10
         self.current_bucket = []
+        self.global_config = config
         with open(f"{os.path.dirname(__file__)}/config_map.json") as json_data:
             self.config_map = json.load(json_data)
 
@@ -49,11 +51,11 @@ class VerticaConnection:
 
     def create_table(self, table_object):
         str_columns = ""
-        self.cur.execute(
-            f"""DROP TABLE IF EXISTS {self.schema}.{table_object['name']}"""
-        )
+        table_name = table_object["name"]
+        self.cur.execute(f"""DROP TABLE IF EXISTS {self.schema}.{table_name}""")
         Log.info(
-            f"Creating table: {json.dumps(table_object, indent=4, sort_keys=True) }"
+            f"Creating table: {json.dumps(table_object, indent=4, sort_keys=True) }",
+            table_name,
         )
         for col in table_object["s_columns"]:
 
@@ -65,8 +67,8 @@ class VerticaConnection:
             str_columns = f"{str_columns},"
         str_columns = f"{str_columns} dataloader_collection_ts INTEGER,"
         str_columns = f"{str_columns} dataloader_modification_ts INTEGER"
-        query = f"""CREATE TABLE {self.schema}.{table_object['name']} ({str_columns})"""
-        Log.info(f"Executing query : {query}")
+        query = f"""CREATE TABLE {self.schema}.{table_name} ({str_columns})"""
+        Log.info(f"Executing query : {query}", table_name)
         self.cur.execute(query)
 
     def insert_values(self, table_name, values):
@@ -76,6 +78,27 @@ class VerticaConnection:
             for q in self.current_bucket:
                 self.execute(q)
             self.current_bucket = []
+
+    def insert_bulk_values(self, table, values):
+        table_name = table["name"]
+        for value in values:
+            col_index = 0
+            col_values = []
+
+            for col in table["s_columns"]:
+                val_to_convert = value[col_index]
+                converted_value = convert_data(value[col_index], col["type"])
+                col_values.append(converted_value)
+                col_index = col_index + 1
+            final_value = ""
+            for val in col_values:
+                if final_value is not "":
+                    final_value = f"{final_value},"
+                final_value = f"{final_value} {val}"
+
+            query = f"""INSERT INTO {self.schema}.{table_name} VALUES ({final_value})"""
+            Log.debug(f"Insert query: {query}", table_name)
+            self.current_bucket.append(query)
 
     def finalize_insert(self):
         Log.info(f"Received finalization insertion")

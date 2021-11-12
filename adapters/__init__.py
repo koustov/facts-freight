@@ -7,8 +7,8 @@ from .aurora import *
 from .vertica import *
 
 
-def getConnectionObject(name, host, port, user, password, dbname, schema):
+def getConnectionObject(name, host, port, user, password, dbname, schema, config):
     if name == "aurora":
-        return AuroraConnection(host, port, user, password, dbname, schema)
+        return AuroraConnection(host, port, user, password, dbname, schema, config)
     if name == "vertica":
-        return VerticaConnection(host, port, user, password, dbname, schema)
+        return VerticaConnection(host, port, user, password, dbname, schema, config)
