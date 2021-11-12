@@ -1,0 +1,26 @@
+{
+	"datatypes": [
+		{
+			"source": "varchar",
+			"target": "VARCHAR"
+		},
+		{
+			"source": "number",
+			"target": "INTEGER"
+		},
+		{
+			"source": "ts+tz",
+			"target": "TIMESTAMPTZ"
+		},
+		{
+			"source": "bool",
+			"target": "BOOLEAN"
+		},
+		{
+			"source": "text",
+			"target": "LONG VARCHAR"
+		}
+	],
+	"YES": true,
+	"NO": false
+}

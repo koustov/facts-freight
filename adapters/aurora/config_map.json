@@ -1,0 +1,26 @@
+{
+	"datatypes": [
+		{
+			"source": "character varying",
+			"target": "varchar"
+		},
+		{
+			"source": "integer",
+			"target": "number"
+		},
+		{
+			"source": "timestamp with time zone",
+			"target": "ts+tz"
+		},
+		{
+			"source": "boolean",
+			"target": "bool"
+		},
+		{
+			"source": "text",
+			"target": "text"
+		}
+	],
+	"YES": true,
+	"NO": false
+}

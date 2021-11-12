@@ -1,0 +1,19 @@
+{
+	"source": "aurora",
+	"target": "vertica",
+	"bucket_size": 10,
+	"source_server": {
+		"server": "aurora-postgresql-us-east-1.cluster-cqcdehswzz9l.us-east-1.rds.amazonaws.com",
+		"port": 5432,
+		"user": "master",
+		"database": "testdb",
+		"schema": "mf_shared"
+	},
+	"target_server": {
+		"server": "10.204.96.111",
+		"port": 5433,
+		"user": "dbadmin",
+		"database": "",
+		"schema": "KM_TEST_CUSTOM_LOADER"
+	}
+}
