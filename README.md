@@ -16,16 +16,18 @@ A simple ,dumb yet **powerful** data loader tool to transfer data from source to
 
 ## Features
 
-- Maintaining schema
-- Basic sanitization
-- Hooks for more flexibility
-- Data validation
-- Schema update validation
-- Support all possible data base providers
-- Compatible with cloud and on-prem
-- Testability
-- Parallel Processing for performance
-- Versioning each pass
+- **Maintaining schema**: absolute copy of schema from source to destination without losing and data or adding garbage buffer
+- **Basic sanitization**: Data conversion as needed
+- **Hooks for more flexibility**, you might want to call a custom post process once the collection is over
+- **Incremental process**
+- **Data validation**: Validate once pushed
+- **Schema update validation**: Notify and take necessary action when source schema gets updated.
+- **Support all possible data base providers**: Open for custom addition
+- **Compatible with cloud and on-prem**
+- **Testable**
+- **Parallel Processing for performance**
+- **Versioning**: Definitely necessary for identifying schema updates
+- **Maintains meta information** for each collection for better reporting and debugging
 
 # Design
 
