@@ -2,8 +2,16 @@
 	"source": "aurora",
 	"target": "vertica",
 	"bucket_size": 10,
+	"object_prefix": "ff_",
+	"version": "0.0.0.2beta",
 	"log": {
 		"max_file_count": 5
+	},
+	"hooks": {
+		"pre_table_collection": "",
+		"post_table_collection": "",
+		"pre_collection": "",
+		"post_collection": ""
 	},
 	"source_server": {
 		"server": "aurora-postgresql-us-east-1.cluster-cqcdehswzz9l.us-east-1.rds.amazonaws.com",
@@ -17,6 +25,7 @@
 		"port": 5433,
 		"user": "dbadmin",
 		"database": "",
-		"schema": "KM_TEST_CUSTOM_LOADER"
+		"schema": "KM_TEST_CUSTOM_LOADER",
+		"metadata_schema": "KM_TEST_CUSTOM_LOADER"
 	}
 }

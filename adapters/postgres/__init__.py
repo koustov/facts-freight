@@ -72,7 +72,6 @@ class AuroraConnection:
         if len(table_config["s_columns"]) > 0:
             col_collection = []
             for col in table_config["s_columns"]:
-                print(col["name"])
                 col_collection.append(col["name"])
             columns = ", ".join(col_collection)
         else:

@@ -3,19 +3,23 @@ import json
 import os
 import logging
 from os import walk
+from constants import Constants
 from create_tables import create_and_update_table
 from config import ConfigMap
 from log import Log
 from multiprocessing import Process
 import time
 import random
+from metadata import MetaData
 
 import adapters
 
 timestamp = int(time.time())
-
+# Initialize log
 Log.setup("logs", True, ConfigMap.config()["log"]["max_file_count"])
+
 Log.startblock("Initialization")
+
 Log.info(f"Getting source connection object")
 source_connection_object = adapters.getConnectionObject(
     ConfigMap.config()["source"],
@@ -49,42 +53,41 @@ Log.info(f"Target connection succeeded")
 Log.info(
     f'Connection details: {json.dumps(ConfigMap.config()["target_server"], indent=4, sort_keys=True) }'
 )
+# Initialize metadata
+MetaData.initialize(target_connection_object)
 Log.endblock("Initialization")
+
+# Check version
+version_row = target_connection_object.execute_select_query(
+    "version",
+    MetaData.meta_data_overview_table_name,
+    f"ORDER BY start_time DESC LIMIT 2",
+)
+old_version = ""
+if version_row != None and len(version_row) > 1:
+    old_version = version_row[1][0]
+    if old_version != ConfigMap.config()["version"]:
+        # Call schema check API
+        Log.warning(
+            f"Version updated. Previous: {old_version} , New : {ConfigMap.config()['version']}"
+        )
+        Log.warning(f"Calling schema validation now")
+    else:
+        Log.info("No version changed. Will not invoke schema validation")
 
 # load table definitions
 table_count = 1
-for (dirpath, dirnames, filenames) in walk("./config/tables"):
-    file_path = f"{dirpath}/{filenames[0]}"
-    Log.info(f"Processing source definition: {table_count}: {filenames[0]}")
-    with open(file_path) as json_data:
-        table_config = json.load(json_data)
-        p = Process(
-            target=create_and_update_table,
-            args=(
-                source_connection_object,
-                target_connection_object,
-                table_config,
-            ),
-        )
-        p.start()
+for table_config in ConfigMap.get_tables():
+    Log.info(f"Processing source definition: {table_count}: {table_config['name']}")
+    p = Process(
+        target=create_and_update_table,
+        args=(
+            source_connection_object,
+            target_connection_object,
+            table_config,
+        ),
+    )
+    p.start()
     table_count = table_count + 1
 
-
-# all_tables = create(source_connection_object, target_connection_object)
-# copy(source_connection_object, target_connection_object, all_tables, timestamp)
-
-
-# def f(name):
-#     list1 = [100, 200, 300, 400, 500, 600]
-#     # print(random.choice(list1))
-#     sleep_time = random.choice(list1)
-#     print(f"Sleeping {sleep_time}")
-#     time.sleep(sleep_time)
-#     print("hello", name)
-
-
-# if __name__ == "__main__":
-#     for num in range(10):
-#         p = Process(target=f, args=(num,))
-#         p.start()
-#         # p.join()
+MetaData.collection_end()

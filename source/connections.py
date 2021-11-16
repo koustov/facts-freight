@@ -26,21 +26,10 @@ try:
     conn = psycopg2.connect(
         "dbname=testdb user=master host=aurora-postgresql-us-east-1.cluster-cqcdehswzz9l.us-east-1.rds.amazonaws.com password=Arcsight?123 port=5432"
     )
-
-    # conn = psycopg2.connect(
-    #     host=ENDPOINT, port=PORT, database="testdb", user=USR, password="Arcsight?123"
-    # )
     cur = conn.cursor()
-    # cur.execute("""SELECT now()""")
-    # cur.execute("""describe table mf_shared.tmp_table""")
-    # cur.execute("""select * from mf_shared.tmp_table""")
-    # cur.execute(
-    #     """SELECT table_name, column_name, data_type FROM  information_schema.columns WHERE table_name = 'mf_shared.tmp_table';"""
-    # )
     cur.execute(
         """SELECT column_name, is_nullable , data_type, character_maximum_length FROM  information_schema.columns WHERE table_name = 'access_request_overview_igasaas_m'"""
     )
     query_results = cur.fetchall()
-    print(query_results)
 except Exception as e:
     print("Database connection failed due to {}".format(e))

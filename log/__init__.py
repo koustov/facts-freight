@@ -11,7 +11,7 @@ class Log:
     log_file = f'{datetime.now().strftime("%d-%m-%Y %H-%M-%S")}.log'
     log_file_path = f"{log_directory}/{log_file}"
     print_time_stamp = True
-    color_map = {"INFO": "blue", "ERROR": "red", "WARNING": "orange", "DEBUG": "yellow"}
+    color_map = {"INFO": "blue", "ERROR": "red", "WARNING": "red", "DEBUG": "yellow"}
     max_file_count = 5
 
     @staticmethod
@@ -24,10 +24,11 @@ class Log:
 
         list_of_files = os.listdir(Log.log_directory)
         full_path = ["logs/{0}".format(x) for x in list_of_files]
-
         if len(list_of_files) > Log.max_file_count:
+
             oldest_file = min(full_path, key=os.path.getctime)
-            os.remove(oldest_file)
+            oldest_file_full_path = f"{oldest_file}"
+            os.remove(oldest_file_full_path)
 
         # Creates a new file
         with open(Log.log_file_path, "w+") as fp:

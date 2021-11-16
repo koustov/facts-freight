@@ -9,5 +9,5 @@
 		"application",
 		"id"
 	],
-	"uniqucolumns": ["id"]
+	"uniqucolumns": ["id", "unique_permission_id"]
 }
