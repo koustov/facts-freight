@@ -1,0 +1,26 @@
+{
+	"name": "application",
+	"type": "t",
+	"columns": [
+		"account_permission_unique_id",
+		"qid",
+		"risk",
+		"show_permission_hierachy",
+		"tree_name",
+		"type",
+		"unique_application_id",
+		"affiliated_application",
+		"environment",
+		"vendor",
+		"version",
+		"created_by",
+		"create_date",
+		"id"
+	],
+	"uniqucolumns": [],
+	"update_identification_column": ["create_date"],
+	"dependency": {
+		"child": [],
+		"sibling": []
+	}
+}

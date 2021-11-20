@@ -10,7 +10,7 @@
 		},
 		{
 			"source": "timestamp with time zone",
-			"target": "ts+tz"
+			"target": "tstz"
 		},
 		{
 			"source": "boolean",
@@ -19,6 +19,14 @@
 		{
 			"source": "text",
 			"target": "text"
+		},
+		{
+			"source": "int8",
+			"target": "bigint"
+		},
+		{
+			"source": "bigserial",
+			"target": "bigint"
 		}
 	],
 	"YES": true,

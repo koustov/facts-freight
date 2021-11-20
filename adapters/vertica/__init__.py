@@ -8,7 +8,7 @@ from datetime import datetime
 from util import Util
 from metadata import MetaData
 from constants import Constants
-from config import ConfigMap
+import math
 
 
 class VerticaConnection:
@@ -33,6 +33,9 @@ class VerticaConnection:
             # 5 seconds timeout for a socket operation (Establishing a TCP connection or read/write operation)
             "connection_timeout": 5,
         }
+        with open(f"{os.path.dirname(__file__)}/config_map.json") as json_data:
+            self.config_map = json.load(json_data)
+        self.server = host
         self.connection = vertica_python.connect(**conn_info)
         self.cur = self.connection.cursor()
         self.schema = schema
@@ -40,27 +43,70 @@ class VerticaConnection:
         self.current_bucket = []
         self.global_config = config
         self.insert_row_count = 0
+        self.test_connection()
+
+    def test_connection(self):
+        query_results = self.execute("""SELECT count(*) FROM v_catalog.tables""")
+        if query_results == None or len(query_results) == 0:
+            raise Exception(f"Unable to connect to to vertica server: {self.server}")
 
     def close_connection(self):
         self.connection.close()
 
+    def select(self, table_config):
+        Log.info(
+            f"Reading {self.schema}.{table_config.name} meta information...",
+            table_config.name,
+        )
+        query = f"""SELECT count(*)  FROM  {self.schema}.{table_config.name}"""
+        query_results = self.execute(query)
+        total_rows = query_results[0][0]
+        Log.info(f"Total rows {total_rows}", table_config.name)
+        step_count = math.ceil(total_rows / self.global_config["bucket_size"])
+        columns = ""
+        if len(table_config.s_columns) > 0:
+            col_collection = []
+            for col in table_config.s_columns:
+                col_collection.append(col["name"])
+            columns = ", ".join(col_collection)
+        else:
+            columns = "*"
+        for step in range(step_count):
+            Log.info(
+                f"Batch size: {self.global_config['bucket_size']}, Processing {step + 1} of {step_count} batch",
+                table_config.name,
+            )
+            query = f"""SELECT {columns} FROM  {self.schema}.{table_config.name} LIMIT {self.global_config['bucket_size']} OFFSET {self.global_config['bucket_size'] * step}"""
+            Log.debug(f"Select query: {query}", table_config.name)
+            self.cur.execute(query)
+            query_results = self.cur.fetchall()
+            Log.debug(f"Retrieved {len(query_results)} rows", table_config.name)
+            yield query_results
+    
+    def get_count(self, table_config):
+        query = f"""SELECT count(*) from {self.schema}.{table_config.name}"""
+        return self.execute(query)
+
     def __get_mapped_data(self, val):
         # TODO: Not a suitable way. use has_key instead
         try:
-            return ConfigMap.config()[val]
+            return self.config_map[val]
         except:
             return val
 
-    def __get_mapped_data_type(self, val, as_target=False):
+    def __get_mapped_data_type(self, val, as_target=False, subtype=None):
         # TODO: Not a suitable way. use has_key instead
         try:
-            for dt in ConfigMap.config()["datatypes"]:
+            for dt in self.config_map["datatypes"]:
                 if as_target:
-                    if dt["target"] == val:
-                        return dt["source"]
+                    if subtype != None:
+                        return f"{dt['target']}[{self.__get_mapped_data_type(subtype)}]"
+                    return f"{dt['source']}%LENGTH%"
                 else:
                     if dt["source"] == val:
-                        return dt["target"]
+                        if subtype != None:
+                            return f"{dt['target']}[{self.__get_mapped_data_type(subtype)}]"
+                        return f"{dt['target']}%LENGTH%"
         except:
             return val
 
@@ -68,11 +114,10 @@ class VerticaConnection:
         self, tablename, table_config={"columns": []}, as_target=False
     ):
         query = f"""select column_name, is_nullable, data_type, data_type_length from v_catalog.columns where table_name ='{tablename}' AND table_schema='{self.schema}'"""
-        if len(table_config["columns"]) > 0:
-            columns = ", ".join("'" + item + "'" for item in table_config["columns"])
+        if len(table_config.columns) > 0:
+            columns = ", ".join("'" + item + "'" for item in table_config.columns)
             query = f"{query} AND column_name in ({columns})"
-        self.cur.execute(query)
-        query_results = self.cur.fetchall()
+        query_results = self.execute(query)
         final_result = []
         for qr in query_results:
             final_result.append(
@@ -87,19 +132,37 @@ class VerticaConnection:
 
     def create_table(self, table_object, ignore_ts_fields=False):
         str_columns = ""
-        table_name = table_object["name"]
-        abs_table_name = Util.get_abs_table_name(table_name)
-        Log.info(
-            f"Creating table: {json.dumps(table_object, indent=4, sort_keys=True) }",
-            table_name,
-        )
-        for col in table_object["s_columns"]:
+        abs_table_name = Util.get_abs_table_name(table_object.name)
 
-            str_columns = f"{str_columns} {col['name']} {self.__get_mapped_data_type(col['type'])}"
-            if "length" in col and col["length"]:
-                str_columns = f"{str_columns}({col['length']})"
+        Log.debug(
+            f"Creating table: {json.dumps(table_object.get_raw_data(), indent=4, sort_keys=True) }",
+            table_object.name,
+        )
+        for col in table_object.s_columns:
+            new_column_type = self.__get_mapped_data_type(
+                col["type"], False, col["subtype"] if "subtype" in col else None
+            )
+            if new_column_type == None:
+                print(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
+                print(col)
+                print(self.config_map)
+                print(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
+            if "length" in col and col["length"] != None:
+                new_column_type = new_column_type.replace(
+                    "%LENGTH%", f"({col['length']})"
+                )
+            else:
+                new_column_type = new_column_type.replace("%LENGTH%", "")
+
+            str_columns = f"{str_columns} {col['name']} {new_column_type}"
             if "nullable" in col and col["nullable"] == False:
                 str_columns = f"{str_columns} NOT NULL"
+            if (
+                table_object.pk != None
+                and table_object.pk != ""
+                and col["name"] == table_object.pk
+            ):
+                str_columns = f"{str_columns} PRIMARY KEY"
             str_columns = f"{str_columns},"
         if ignore_ts_fields:
             str_columns = str_columns[:-1]
@@ -111,14 +174,16 @@ class VerticaConnection:
                 f"{str_columns} {Constants.modification_time_stamp_column_name} INTEGER"
             )
         query = f"""CREATE TABLE IF NOT EXISTS {self.schema}.{abs_table_name} ({str_columns})"""
-        Log.info(f"Executing query : {query}", table_name)
-        self.cur.execute(query)
+        # Log.info(f"Executing query : {query}", table_object.name)
+        self.execute(query)
+        Log.info(
+            f"The table {table_object.name} got create successfully", table_object.name
+        )
 
     def insert_values(self, table, values, ignore_ts_fields=False):
-        Log.info("Row add/update request received")
-        table_name = table["name"]
+        Log.info("Row add/update request received", table.name)
         query = self.get_query_to_insert(values, table, ignore_ts_fields)
-        Log.debug(query, table_name)
+        Log.debug(query, table.name)
         self.current_bucket.append(query)
         if len(self.current_bucket) == self.bucket_size:
             for q in self.current_bucket:
@@ -127,25 +192,24 @@ class VerticaConnection:
             self.current_bucket = []
 
     def insert_bulk_values(self, table, values, ignore_ts_fields=False):
-        table_name = table["name"]
         self.insert_row_count = 0
         for value in values:
             query = self.get_query_to_insert(value, table, ignore_ts_fields)
-            Log.debug(query, table_name)
+            Log.debug(query, table.name)
             if query != "" and query != None and len(query) > 10:
                 self.insert_row_count = self.insert_row_count + 1
-                Log.debug(f"Insert query: {query}", table_name)
+                Log.debug(f"Insert query: {query}", table.name)
                 self.cur.execute(query)
 
-    def finalize_insert(self):
-        Log.info(f"Received finalization insertion")
+    def finalize_insert(self, table):
+        Log.info(f"Received finalization insertion", table.name)
         for q in self.current_bucket:
             if q != None:
                 self.execute(q)
             self.current_bucket = []
 
     def execute(self, query):
-        Log.info(f"Executing: {query}")
+        Log.debug(f"Executing: {query}")
         self.cur.execute(query)
         query_results = self.cur.fetchall()
         return query_results
@@ -154,18 +218,22 @@ class VerticaConnection:
         query = f"""SELECT {columns} FROM {self.schema}.{table_name} {suffix}"""
         return self.execute(query)
 
-    @staticmethod
-    def ticks(dt):
-        return (dt - datetime(1, 1, 1)).total_seconds() * 10000000
+    def clear_table(self, table):
+        query = f"""DELETE FROM {self.schema}.{table.name}"""
+        self.execute(query)
+
+    def drop_table(self, table):
+        Log.warning(f"Dropping table {table.name}")
+        query = f"""DROP TABLE IF EXISTS {self.schema}.{table.name}"""
+        self.execute(query)
 
     def get_query_to_insert(self, value, table, ignore_ts_fields=False):
-        table_name = table["name"]
-        abs_table_name = Util.get_abs_table_name(table_name)
+        abs_table_name = Util.get_abs_table_name(table.name)
         # Preparing all columns list
         columns = ""
-        if len(table["s_columns"]) > 0:
+        if len(table.s_columns) > 0:
             col_collection = []
-            for col in table["s_columns"]:
+            for col in table.s_columns:
                 col_collection.append(col["name"])
             columns = ", ".join(col_collection)
             if ignore_ts_fields == False:
@@ -175,11 +243,17 @@ class VerticaConnection:
 
         # Preparging insert column list
         col_values = []
-        unique_columns = table["uniqucolumns"] if "uniqucolumns" in table else []
+        unique_columns = table.uniqucolumns
         unique_columns_values = ""
         col_index = 0
-        for col in table["s_columns"]:
-            converted_value = convert_data(value[col_index], col["type"])
+        for col in table.s_columns:
+            converted_value = ""
+            try:
+                converted_value = convert_data(value[col_index], col["type"])
+            except:
+                Log.error(
+                    f"Value Conversion: {col_index}, {col['type']} , {table.name}, {value}"
+                )
             col_values.append(converted_value)
             if col["name"] in unique_columns:
                 if unique_columns_values != "":
@@ -194,9 +268,7 @@ class VerticaConnection:
         check_query = f"""SELECT {columns} FROM {self.schema}.{abs_table_name} WHERE {unique_columns_values} LIMIT 1"""
         Log.debug(f"check_query: {check_query}")
 
-        self.cur.execute(check_query)
-        query_result = self.cur.fetchall()
-
+        query_result = self.execute(check_query)
         if len(query_result) > 0:
             # Row exist. Now need to check if its an exact copy
             data = query_result[0]
@@ -217,7 +289,7 @@ class VerticaConnection:
             else:
                 col_update_values = ""
                 col_update_index = 0
-                for col in table["s_columns"]:
+                for col in table.s_columns:
                     if col["name"] not in unique_columns:
                         converted_value = convert_data(
                             value[col_update_index], col["type"]
@@ -228,7 +300,7 @@ class VerticaConnection:
                     col_update_index = col_update_index + 1
                 col_update_values = col_update_values[:-1]
                 if ignore_ts_fields == False:
-                    col_update_values = f"{col_update_values},{Constants.modification_time_stamp_column_name}={VerticaConnection.ticks(datetime.utcnow())}"
+                    col_update_values = f"{col_update_values},{Constants.modification_time_stamp_column_name}={Util.get_current_time()}"
                 return f"""UPDATE {self.schema}.{abs_table_name} SET {col_update_values} WHERE {unique_columns_values}"""
         else:
             # Its a new row
@@ -237,7 +309,7 @@ class VerticaConnection:
                     final_value = f"{final_value},"
                 final_value = f"{final_value} {val}"
             if ignore_ts_fields == False:
-                final_value = f"{final_value}, {VerticaConnection.ticks(datetime.utcnow())}, {VerticaConnection.ticks(datetime.utcnow())}"
+                final_value = f"{final_value}, {MetaData.collection_start_time}, {Util.get_current_time()}"
             return (
                 f"""INSERT INTO {self.schema}.{abs_table_name} VALUES ({final_value})"""
             )

@@ -1,0 +1,23 @@
+{
+	"name": "sgroup",
+	"type": "t",
+	"columns": [
+		"deleted",
+		"effective",
+		"group_id",
+		"long_description",
+		"name",
+		"short_description",
+		"unique_group_id",
+		"data_collection",
+		"identity_source",
+		"id",
+		"last_modified"
+	],
+	"uniqucolumns": [],
+	"update_identification_column": [],
+	"dependency": {
+		"child": [],
+		"sibling": []
+	}
+}

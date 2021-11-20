@@ -1,0 +1,34 @@
+{
+	"name": "saccount",
+	"type": "t",
+	"columns": [
+		"id",
+		"account_id",
+		"conn_acct_id",
+		"deleted",
+		"description",
+		"disabled",
+		"effective",
+		"last_login",
+		"name",
+		"risk",
+		"state",
+		"type",
+		"unique_account_id",
+		"user_id",
+		"application",
+		"base_application",
+		"data_collection",
+		"suser",
+		"classification_id",
+		"login_count",
+		"relation_to_user_type",
+		"change_date"
+	],
+	"uniqucolumns": [],
+	"update_identification_column": ["change_date"],
+	"dependency": {
+		"child": [],
+		"sibling": []
+	}
+}

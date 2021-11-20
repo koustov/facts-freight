@@ -11,7 +11,13 @@ class Log:
     log_file = f'{datetime.now().strftime("%d-%m-%Y %H-%M-%S")}.log'
     log_file_path = f"{log_directory}/{log_file}"
     print_time_stamp = True
-    color_map = {"INFO": "blue", "ERROR": "red", "WARNING": "red", "DEBUG": "yellow"}
+    color_map = {
+        "INFO": "blue",
+        "ERROR": "red",
+        "WARNING": "red",
+        "DEBUG": "yellow",
+        "HIGHLIGHT": "green",
+    }
     max_file_count = 5
 
     @staticmethod
@@ -35,9 +41,9 @@ class Log:
             fp.write("Starting a new log file" + "\n")
 
     @staticmethod
-    def log(text, type, block_name="", show_stdout=True):
+    def log(text, type, block_name="General", show_stdout=True):
         log_text = ""
-        log_time = f'{log_text}{datetime.now().strftime("%H:%M:%S")}'
+        log_time = f'{log_text}{datetime.now().strftime("%H:%M:%S")} : {os.getpid()} :'
         log_type = type.upper()
         if Log.print_time_stamp == True:
             log_text = f"{log_time} : "
@@ -48,9 +54,9 @@ class Log:
         log_text = f"{log_text}{text}"
         if show_stdout:
             cprint(log_time, end=" ")
+            cprint(log_type, Log.color_map[log_type], end=" ")
             if block_name is not "":
                 cprint(f"[{block_name}]", end=" ")
-            cprint(log_type, Log.color_map[log_type], end=" ")
             cprint(":", end=" ")
             new_text = text
             if len(text) > 100:
@@ -76,13 +82,35 @@ class Log:
         Log.log(text, "WARNING", block_name)
 
     @staticmethod
+    def highlight(text, block_name=""):
+        Log.log(text, "HIGHLIGHT", block_name)
+
+    @staticmethod
     def startblock(text):
-        print(
-            f"-------------------------------------------Start: {text}-------------------------------------------"
+        cprint(
+            "-------------------------------------------",
+            Log.color_map["HIGHLIGHT"],
+            end=" ",
         )
+        cprint(f"Start: {text}", Log.color_map["INFO"], end=" ")
+        cprint(
+            "-------------------------------------------",
+            Log.color_map["HIGHLIGHT"],
+            end=" ",
+        )
+        print("")
 
     @staticmethod
     def endblock(text):
-        print(
-            f"-------------------------------------------End: {text}-------------------------------------------"
+        cprint(
+            "-------------------------------------------",
+            Log.color_map["HIGHLIGHT"],
+            end=" ",
         )
+        cprint(f"End: {text}", Log.color_map["INFO"], end=" ")
+        cprint(
+            "-------------------------------------------",
+            Log.color_map["HIGHLIGHT"],
+            end=" ",
+        )
+        print("")

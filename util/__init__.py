@@ -18,3 +18,10 @@ class Util:
         if "object_suffix" in conf:
             final_name = f"{table_name}{conf['object_suffix']}"
         return final_name
+
+    @staticmethod
+    def get_current_time():
+        return time.time()
+
+    
+

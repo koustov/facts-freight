@@ -1,0 +1,25 @@
+{
+	"name": "suser",
+	"type": "t",
+	"columns": [
+		"deleted",
+		"display_name",
+		"effective",
+		"home_phone",
+		"job_title",
+		"unique_user_id",
+		"identity_source",
+		"workforce_id",
+		"risk",
+		"id",
+		"change_date",
+		"original_create_date",
+		"delete_date"
+	],
+	"uniqucolumns": [],
+	"update_identification_column": ["change_date"],
+	"dependency": {
+		"child": [],
+		"sibling": []
+	}
+}

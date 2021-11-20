@@ -1,0 +1,31 @@
+{
+	"name": "spermission",
+	"type": "t",
+	"columns": [
+		"assignable",
+		"authoritative",
+		"bound_by_id",
+		"deleted",
+		"description",
+		"effective",
+		"exclude_from_catalog",
+		"name",
+		"permission_id",
+		"risk",
+		"type",
+		"unique_permission_id",
+		"application",
+		"base_application",
+		"data_collection",
+		"prov_unique_permission_id",
+		"static_permission",
+		"id",
+		"change_date"
+	],
+	"uniqucolumns": [],
+	"update_identification_column": ["change_date"],
+	"dependency": {
+		"child": [],
+		"sibling": []
+	}
+}

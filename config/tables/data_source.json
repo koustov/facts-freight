@@ -1,0 +1,19 @@
+{
+	"name": "data_source",
+	"type": "t",
+	"columns": [
+		"data_source_type",
+		"deleted",
+		"name",
+		"updated",
+		"unique_id",
+		"id",
+		"description"
+	],
+	"uniqucolumns": [],
+	"update_identification_column": [],
+	"dependency": {
+		"child": [],
+		"sibling": []
+	}
+}

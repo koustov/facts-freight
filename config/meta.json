@@ -1,9 +1,9 @@
 {
-	"source": "aurora",
+	"source": "postgres",
 	"target": "vertica",
-	"bucket_size": 10,
+	"bucket_size": 100,
 	"object_prefix": "ff_",
-	"version": "0.0.0.2beta",
+	"version": "0.0.0.3beta",
 	"log": {
 		"max_file_count": 5
 	},
@@ -14,13 +14,21 @@
 		"post_collection": ""
 	},
 	"source_server": {
-		"server": "aurora-postgresql-us-east-1.cluster-cqcdehswzz9l.us-east-1.rds.amazonaws.com",
+		"server": "10.204.97.165",
 		"port": 5432,
-		"user": "master",
-		"database": "testdb",
-		"schema": "mf_shared"
+		"user": "postgres",
+		"database": "igops",
+		"schema": "public"
 	},
 	"target_server": {
+		"server": "10.204.96.111",
+		"port": 5433,
+		"user": "dbadmin",
+		"database": "",
+		"schema": "KM_TEST_CUSTOM_LOADER",
+		"metadata_schema": "KM_TEST_CUSTOM_LOADER"
+	},
+	"config_server": {
 		"server": "10.204.96.111",
 		"port": 5433,
 		"user": "dbadmin",

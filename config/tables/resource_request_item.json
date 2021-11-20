@@ -1,0 +1,24 @@
+{
+	"name": "resource_request_item",
+	"type": "t",
+	"columns": [
+		"id",
+		"resource_request_id",
+		"request_policy_id",
+		"unique_item_id",
+		"item_type",
+		"unique_recipient_id",
+		"containing_role_id",
+		"change_request_item_id",
+		"role_level_approval",
+		"last_status_update_time",
+		"supress_task",
+		"id"
+	],
+	"uniqucolumns": [],
+	"update_identification_column": ["last_status_update_time"],
+	"dependency": {
+		"child": [],
+		"sibling": []
+	}
+}

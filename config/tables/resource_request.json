@@ -1,0 +1,23 @@
+{
+	"name": "resource_request",
+	"type": "t",
+	"columns": [
+		"unique_requester_id",
+		"current_approval_step",
+		"change_set_id",
+		"reason",
+		"request_status",
+		"approval_policy_id",
+		"creation_time",
+		"approval_start_time",
+		"change_set_start_time",
+		"last_update_time",
+		"id"
+	],
+	"uniqucolumns": [],
+	"update_identification_column": ["last_update_time"],
+	"dependency": {
+		"child": [],
+		"sibling": []
+	}
+}

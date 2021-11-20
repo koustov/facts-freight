@@ -6,10 +6,10 @@
 		},
 		{
 			"source": "number",
-			"target": "INTEGER"
+			"target": "INT"
 		},
 		{
-			"source": "ts+tz",
+			"source": "tstz",
 			"target": "TIMESTAMPTZ"
 		},
 		{
@@ -17,8 +17,24 @@
 			"target": "BOOLEAN"
 		},
 		{
+			"source": "boolean",
+			"target": "BOOLEAN"
+		},
+		{
 			"source": "text",
 			"target": "LONG VARCHAR"
+		},
+		{
+			"source": "bigint",
+			"target": "BIGINT"
+		},
+		{
+			"source": "array",
+			"target": "ARRAY"
+		},
+		{
+			"source": "timestamp with time zone",
+			"target": "TIMESTAMPTZ"
 		}
 	],
 	"YES": true,
